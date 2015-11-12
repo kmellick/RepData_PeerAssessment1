@@ -1,0 +1,83 @@
+---
+output: html_document
+---
+
+#Reproducible Research Coursera Class Peer Assessment 1
+
+##Load required R packages and the dataset
+```{r, eval=TRUE, echo=TRUE, results="asis"}
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(stats)
+
+setwd("H:/Public/Coursera/Reproducible Research")
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(fileUrl, destfile = "./courseproject2.zip")
+unzip("courseproject2.zip")
+AMDdata <- read.csv("activity.csv")
+AMDdata$date <- as.POSIXct(AMDdata$date, format="%Y-%m-%d")
+print("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip")
+summary(AMDdata)
+```
+
+##Histogram and Summary Information for the Number of Steps Taken per Day
+###Histogram of Number of Steps Activity Patterns
+```{r, eval=TRUE, echo=TRUE, results="asis"}
+hist(AMDdata$steps, main="Number of Daily Steps Taken by an Individual")
+
+### Summary Statistics on the Number of Steps Taken by an Individual per Day
+print(paste("Mean Number of Steps = ", round(mean(AMDdata$steps, na.rm=T), digits=2)))
+print(paste("Median Number of Steps = ", median(AMDdata$steps, na.rm=T)))
+```
+
+##Average Daily Activity Patterns: 5 Minute Intervals and Number of Steps
+```{r, eval=TRUE, echo=TRUE, results="asis"}
+meandata <- group_by(AMDdata, interval) %>% summarize(meansteps=mean(steps, na.rm=T)) %>% ungroup()
+meandata$interval <- as.numeric(meandata$interval)
+ggplot(data=meandata, aes(x=interval, y=meansteps)) + 
+    geom_line(color="blue") +
+    theme(axis.text.x = element_text(angle = 90, vjust=0.25, hjust = 1), text =            element_text(size=8), axis.title.y=element_text(vjust=1), plot.margin = unit(c(1,1.5,1,1), "cm")) +
+    ggtitle("Mean Daily Steps Taken by an Individual")
+
+meandata <- meandata[order(-meandata$meansteps), ]
+print(paste("5 Minute Interval with Maximum Number of Steps identified:", meandata[1, 1]))
+```
+
+#Imputing missing values
+```{r, eval=TRUE, echo=TRUE, results="asis"}
+##Calcualting the Number of Missing Values
+numNAs <- nrow(AMDdata) - nrow(na.omit(AMDdata))
+print(paste("Number of Missing Values in the active dataset = ", numNAs))
+
+##Replacing Missing Values with the Daily Mean Number of Steps
+AMDdataNA <- group_by(AMDdata, date) %>% mutate(meansteps=mean(steps, na.rm=T)) %>% ungroup()
+AMDdataNA <- mutate(AMDdataNA, TotalMeanSteps=mean(steps, na.rm=T))
+AMDdataNA <- mutate(AMDdataNA, steps_sub_NA = ifelse(is.na(steps) & is.na(meansteps), TotalMeanSteps, ifelse(is.na(steps) & !is.na(meansteps), meansteps, steps)))
+```
+
+###Histogram of Number of Steps Activity Patterns
+```{r, eval=TRUE, echo=TRUE, results="asis"}
+hist(AMDdataNA$steps_sub_NA, main="Mean Daily Steps (NA Replaced by Daily/Total Means)")
+
+### Summary Statistics on the Number of Steps Taken by an Individual per Day
+### Missing Values were Replaced with Total (no reported values in a day) or Daily Means (at least one reported value in a day)
+print(paste("Mean Number of Steps = ", round(mean(AMDdataNA$steps_sub_NA, na.rm=T), digits=2)))
+print(paste("Median Number of Steps = ", round(median(AMDdataNA$steps_sub_NA, na.rm=T), digits=2)))
+```
+
+#Comparison of Weekend and Weekday Steps
+```{r, eval=TRUE, echo=TRUE, results="asis"}
+##Assign Weekday or Weekend to Each Date
+AMDdataNA <- mutate(AMDdataNA, weekdays = weekdays(date))
+AMDdataNA <- mutate(AMDdataNA, workweekornot = ifelse(weekdays %in% c("Saturday", "Sunday"), "Weekend", "Weekday"))
+AMDdataNA <- group_by(AMDdataNA, interval, weekdays) %>% mutate(steps_sub_NA_meanby_weekday = mean(steps_sub_NA, na.rm=T)) %>% ungroup()
+
+summary(AMDdataNA)
+
+##Chart Comparing Weekend and Weekday Steps
+ggplot(data=AMDdataNA, aes(x=interval, y=steps_sub_NA_meanby_weekday)) +
+  geom_line(color="blue") +
+  facet_wrap(~workweekornot, ncol=1) +
+  ggtitle("Mean Daily Steps by Day of Week and Interval, NAs Imputed")
+```
