@@ -1,11 +1,13 @@
 ---
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 #Reproducible Research Coursera Class Peer Assessment 1
 
 ##Load required R packages and the dataset
-```{r, eval=TRUE, echo=TRUE, results="asis"}
+```{r pull data, eval=TRUE, echo=TRUE, results="asis"}
 library(dplyr)
 library(ggplot2)
 library(grid)
@@ -23,7 +25,7 @@ summary(AMDdata)
 
 ##Histogram and Summary Information for the Number of Steps Taken per Day
 ###Histogram of Number of Steps Activity Patterns
-```{r, eval=TRUE, echo=TRUE, results="asis"}
+```{r raw histograms, eval=TRUE, echo=TRUE, results="asis"}
 hist(AMDdata$steps, main="Number of Daily Steps Taken by an Individual")
 
 ### Summary Statistics on the Number of Steps Taken by an Individual per Day
@@ -32,7 +34,7 @@ print(paste("Median Number of Steps = ", median(AMDdata$steps, na.rm=T)))
 ```
 
 ##Average Daily Activity Patterns: 5 Minute Intervals and Number of Steps
-```{r, eval=TRUE, echo=TRUE, results="asis"}
+```{r averaging, eval=TRUE, echo=TRUE, results="asis"}
 meandata <- group_by(AMDdata, interval) %>% summarize(meansteps=mean(steps, na.rm=T)) %>% ungroup()
 meandata$interval <- as.numeric(meandata$interval)
 ggplot(data=meandata, aes(x=interval, y=meansteps)) + 
@@ -45,7 +47,7 @@ print(paste("5 Minute Interval with Maximum Number of Steps identified:", meanda
 ```
 
 #Imputing missing values
-```{r, eval=TRUE, echo=TRUE, results="asis"}
+```{r averaging and imputing NAS, eval=TRUE, echo=TRUE, results="asis"}
 ##Calcualting the Number of Missing Values
 numNAs <- nrow(AMDdata) - nrow(na.omit(AMDdata))
 print(paste("Number of Missing Values in the active dataset = ", numNAs))
@@ -57,7 +59,7 @@ AMDdataNA <- mutate(AMDdataNA, steps_sub_NA = ifelse(is.na(steps) & is.na(meanst
 ```
 
 ###Histogram of Number of Steps Activity Patterns
-```{r, eval=TRUE, echo=TRUE, results="asis"}
+```{r charting average with imputed NAs, eval=TRUE, echo=TRUE, results="asis"}
 hist(AMDdataNA$steps_sub_NA, main="Mean Daily Steps (NA Replaced by Daily/Total Means)")
 
 ### Summary Statistics on the Number of Steps Taken by an Individual per Day
@@ -67,7 +69,7 @@ print(paste("Median Number of Steps = ", round(median(AMDdataNA$steps_sub_NA, na
 ```
 
 #Comparison of Weekend and Weekday Steps
-```{r, eval=TRUE, echo=TRUE, results="asis"}
+```{r weedays and weekends, eval=TRUE, echo=TRUE, results="asis"}
 ##Assign Weekday or Weekend to Each Date
 AMDdataNA <- mutate(AMDdataNA, weekdays = weekdays(date))
 AMDdataNA <- mutate(AMDdataNA, workweekornot = ifelse(weekdays %in% c("Saturday", "Sunday"), "Weekend", "Weekday"))
